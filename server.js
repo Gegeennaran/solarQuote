@@ -11,7 +11,10 @@ app.use(express.json());
 
 app.post('/api/solar', async (req, res) => {
   const { address } = req.body;
-  if (!address) return res.status(400).json({ error: 'Missing address' });
+  if (!address) {
+    console.warn('❗ Missing address in request body');
+    return res.status(400).json({ error: 'Missing address' });
+  }
 
   try {
     const response = await fetch(
@@ -23,10 +26,24 @@ app.post('/api/solar', async (req, res) => {
       }
     );
 
-    const data = await response.json();
+    const text = await response.text(); // Raw response text for debugging
+    console.log('📦 Raw Google Solar API response:', text);
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (parseError) {
+      console.error('❌ Failed to parse JSON:', parseError);
+      return res.status(500).json({ error: 'Failed to parse Solar API response' });
+    }
+
+    if (!response.ok) {
+      console.warn('⚠️ Solar API returned error:', data);
+    }
+
     res.status(response.status).json(data);
   } catch (err) {
-    console.error(err);
+    console.error('🚨 Error contacting Solar API:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -36,5 +53,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
